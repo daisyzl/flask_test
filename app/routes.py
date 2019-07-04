@@ -33,4 +33,3 @@ def login():
         # 模板需要将消息渲染到基础模板中，才能让所有派生出来的模板都能显示出来。
         return redirect(url_for('index'))
     return render_template('login.html', title='Sign In', form=form)
-
