@@ -4,13 +4,13 @@
 '''
 
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, BooleanField, SubmitField
-from wtforms.validators import DataRequired, Email, EqualTo, ValidationError
+from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField
+from wtforms.validators import DataRequired, Email, EqualTo, ValidationError, Length
 
-# 登录表单
 from app.models import User
 
 
+# 登录表单
 class LoginForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired()])
     password = PasswordField('Password', validators=[DataRequired()])
@@ -42,3 +42,8 @@ class RegistrationForm(FlaskForm):
     # WTForms将这些方法作为自定义验证器，并在已设置验证器之后调用它们。
 
 
+# 个人资料编辑器
+class EditProfileForm(FlaskForm):
+    username = StringField('Username', validators=[DataRequired()])
+    about_me = TextAreaField('About me', validators=[Length(min=0, max=140)])
+    submit = SubmitField('Submit')

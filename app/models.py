@@ -2,6 +2,7 @@
 '''
 function：
 '''
+from _md5 import md5
 from datetime import datetime
 
 from flask_login import UserMixin
@@ -9,7 +10,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 from app import db, login
 
-
+# Flask-Login插件需要在用户模型上实现某些属性和方法
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), index=True, unique=True)
@@ -18,6 +19,8 @@ class User(UserMixin, db.Model):
     posts = db.relationship('Post', backref='author', lazy='dynamic')
     # backref参数定义了代表“多”的类的实例反向调用“一”的时候的属性名称。这将会为用户动态添加一个属性post.author，
     # 调用它将返回给该用户动态的用户实例。
+    about_me = db.Column(db.String(140))
+    last_seen = db.Column(db.DateTime, default=datetime.utcnow)
 
     def __repr__(self):
         return '<User {}>'.format(self.username)
@@ -27,6 +30,11 @@ class User(UserMixin, db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+    def avatar(self, size):
+        digest = md5(self.email.lower().encode('utf-8')).hexdigest()
+        return 'https://www.gravatar.com/avatar/{}?d=identicon&s={}'.format(
+            digest, size)
 
 
 @login.user_loader
