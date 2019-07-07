@@ -5,8 +5,8 @@ from flask_login import current_user, login_user, logout_user, login_required
 from werkzeug.urls import url_parse
 
 from app import app, db
-from app.forms import LoginForm, RegistrationForm, EditProfileForm
-from app.models import User
+from app.forms import LoginForm, RegistrationForm, EditProfileForm, PostForm
+from app.models import User, Post
 
 
 @app.before_request
@@ -16,23 +16,35 @@ def before_request():
         db.session.commit()
 
 
-@app.route('/')
-@app.route('/index')
+# POST请求，视图函数处理接收的表单数据
+@app.route('/', methods=['GET', 'POST'])
+@app.route('/index', methods=['GET', 'POST'])
 @login_required
 # 该函数将受到保护，不允许未经身份验证的用户访问
 def index():
-    user = {'username': 'zhanglu'}
-    posts = [
-        {
-            'author': {'username': 'John'},
-            'body': 'Beautiful day in Portland!'
-        },
-        {
-            'author': {'username': 'Susan'},
-            'body': 'The Avengers movie was so cool!'
-        }
-    ]
-    return render_template('index.html',  title='Home', posts=posts)
+    form = PostForm()
+    if form.validate_on_submit():
+        post = Post(body=form.post.data, author=current_user)
+        # 利用外键
+        db.session.add(post)
+        db.session.commit()
+        flash('Your post is now live!')
+        return redirect(url_for('index'))
+    # 通过重定向来响应Web表单提交产生的POST请求是一种标准做法。chapter9 分页
+    page = request.args.get('page', 1, type=int)
+    posts = current_user.followed_posts().paginate(
+        page, app.config['POSTS_PER_PAGE'], False)
+    # Flask-SQLAlchemy的paginate()方法原生就支持分页
+    # 从1开始的页码
+    # 每页的数据量
+    # 错误处理布尔标记，如果是True，当请求范围超出已知范围时自动引发404错误。如果是False，则会返回一个空列表。
+    next_url = url_for('index', page=posts.next_num) \
+        if posts.has_next else None
+    prev_url = url_for('index', page=posts.prev_num) \
+        if posts.has_prev else None
+    return render_template('index.html',  title='Home Page', form=form,
+                           posts=posts.items, next_url=next_url,
+                           prev_url=prev_url)
 
 
 @app.route('/login',methods=['GET','POST'])
@@ -90,11 +102,15 @@ def register():
 def user(username):
     user = User.query.filter_by(username=username).first_or_404()
     # 当有结果时它的工作方式与first()完全相同，但是在没有结果的情况下会自动发送404 error给客户端。
-    posts = [
-        {'author': user, 'body': 'Test post #1'},
-        {'author': user, 'body': 'Test post #2'}
-    ]
-    return render_template('user.html', user=user, posts=posts)
+    page = request.args.get('page', 1, type=int)
+    posts = user.posts.order_by(Post.timestamp.desc()).paginate(
+        page, app.config['POSTS_PER_PAGE'], False)
+    next_url = url_for('user', username=user.username, page=posts.next_num) \
+        if posts.has_next else None
+    prev_url = url_for('user', username=user.username, page=posts.prev_num) \
+        if posts.has_prev else None
+    return render_template('user.html', user=user, posts=posts.items,
+                           next_url=next_url, prev_url=prev_url)
 
 
 @app.route('/edit_profile', methods=['GET', 'POST'])
@@ -155,3 +171,22 @@ def unfollow(username):
     db.session.commit()
     flash('You are not following {}.'.format(username))
     return redirect(url_for('user', username=username))
+
+
+@app.route('/explore')
+@login_required
+def explore():
+    page = request.args.get('page', 1, type=int)
+    posts = Post.query.order_by(Post.timestamp.desc()).paginate(
+        page, app.config['POSTS_PER_PAGE'], False)
+    # 分页
+    next_url = url_for('explore', page=posts.next_num) \
+        if posts.has_next else None
+    prev_url = url_for('explore', page=posts.prev_num) \
+        if posts.has_prev else None
+    # url_for()函数的一个有趣的地方是，你可以添加任何关键字参数，
+    # 如果这些参数的名字没有直接在URL中匹配使用，
+    # 那么Flask将它们设置为URL的查询字符串参数。
+    return render_template('index.html', title='Explore',
+                           posts=posts.items, next_url=next_url,
+                           prev_url=prev_url)

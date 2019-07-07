@@ -62,3 +62,10 @@ class EditProfileForm(FlaskForm):
 在编辑个人资料表单中，我必须做同样的检查，但有一个例外。 
 如果用户不改变原始用户名，那么验证应该允许，因为该用户名已经被分配给该用户。
 '''
+
+
+# 发布用户动态
+class PostForm(FlaskForm):
+    post = TextAreaField('Say something', validators=[
+        DataRequired(), Length(min=1, max=140)])
+    submit = SubmitField('Submit')
