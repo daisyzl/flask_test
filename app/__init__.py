@@ -4,6 +4,7 @@ from logging.handlers import SMTPHandler, RotatingFileHandler
 
 from flask import Flask
 from flask_login import LoginManager
+from flask_mail import Mail
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 
@@ -19,6 +20,8 @@ login = LoginManager(app)
 login.login_view = 'login'
 # 如果未登录的用户尝试查看受保护的页面，Flask-Login将自动将用户重定向到登录表单
 # 注册flask插件的方式
+mail = Mail(app)
+
 
 if not app.debug:
     if app.config['MAIL_SERVER']:

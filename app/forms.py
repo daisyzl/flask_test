@@ -42,6 +42,20 @@ class RegistrationForm(FlaskForm):
     # WTForms将这些方法作为自定义验证器，并在已设置验证器之后调用它们。
 
 
+# 请求重置密码
+class ResetPasswordRequestForm(FlaskForm):
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    submit = SubmitField('Request Password Reset')
+
+
+# 重置用户密码
+class ResetPasswordForm(FlaskForm):
+    password = PasswordField('Password', validators=[DataRequired()])
+    password2 = PasswordField(
+        'Repeat Password', validators=[DataRequired(), EqualTo('password')])
+    submit = SubmitField('Request Password Reset')
+
+
 # 个人资料编辑器
 class EditProfileForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired()])
