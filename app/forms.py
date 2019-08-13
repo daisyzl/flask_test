@@ -28,6 +28,7 @@ class RegistrationForm(FlaskForm):
     # 要求用户输入密码两次
     submit = SubmitField('Register')
 
+    # 自定义校验器
     def validate_username(self, username):
         user = User.query.filter_by(username=username.data).first()
         if user is not None:
@@ -64,6 +65,8 @@ class EditProfileForm(FlaskForm):
 
     def __init__(self, original_username, *args, **kwargs):
         super(EditProfileForm, self).__init__(*args, **kwargs)
+        # 子类重新了构造函数，调用超类的方法，基础教程9.2.3使用函数super
+        # super().__init__()也可以这样写
         self.original_username = original_username
 
     def validate_username(self, username):
