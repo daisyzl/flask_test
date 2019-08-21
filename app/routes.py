@@ -22,6 +22,7 @@ def before_request():
 @app.route('/index', methods=['GET', 'POST'])
 @login_required
 # 该函数将受到保护，不允许未经身份验证的用户访问
+# @login_required添加到位于@app.route装饰器下面的视图函数上
 def index():
     form = PostForm()
     if form.validate_on_submit():
@@ -35,7 +36,7 @@ def index():
     page = request.args.get('page', 1, type=int)
     posts = current_user.followed_posts().paginate(
         page, app.config['POSTS_PER_PAGE'], False)
-    # Flask-SQLAlchemy的paginate()方法原生就支持分页
+    # Flask-SQLAlchemy的所有查询对象都支持paginate()方法，原生就支持分页
     # 从1开始的页码
     # 每页的数据量
     # 错误处理布尔标记，如果是True，当请求范围超出已知范围时自动引发404错误。如果是False，则会返回一个空列表。
@@ -63,8 +64,18 @@ def login():
         login_user(user, remember=form.remember_me.data)
         # 将用户登录状态注册为已登录
         next_page = request.args.get('next')
+        # 重定向后相对url
         if not next_page or url_parse(next_page).netloc != '':
             next_page = url_for('index')
+        '''
+        实际上有三种可能的情况需要考虑，以确定成功登录后重定向的位置：
+        如果登录URL中不含next参数，那么将会重定向到本应用的主页。
+        如果登录URL中包含next参数，其值是一个相对路径（换句话说，该URL不含域名信息），那么将会重定向到本应用的这个相对路径。
+        如果登录URL中包含next参数，其值是一个包含域名的完整URL，那么重定向到本应用的主页。
+        前两种情况很好理解，第三种情况是为了使应用更安全。 
+        攻击者可以在next参数中插入一个指向恶意站点的URL，因此应用仅在重定向URL是相对路径时才执行重定向，这可确保重定向与应用保持在同一站点中。 
+        为了确定URL是相对的还是绝对的，我使用Werkzeug的url_parse()函数解析，然后检查netloc属性是否被设置。
+        '''
         return redirect(next_page)
         # 要求用户登录 知识点  chapter5
 

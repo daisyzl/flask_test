@@ -13,6 +13,8 @@ from config import Config
 
 app = Flask(__name__)
 app.config.from_object(Config)
+# 添加类存储的变量
+# app.config['POSTS_PER_PAGE'] 赋值方式
 db = SQLAlchemy(app)
 # 表示数据库
 migrate = Migrate(app, db)
@@ -20,6 +22,8 @@ migrate = Migrate(app, db)
 login = LoginManager(app)
 login.login_view = 'login'
 # 如果未登录的用户尝试查看受保护的页面，Flask-Login将自动将用户重定向到登录表单
+# 'login'值是登录视图函数（endpoint）名，换句话说该名称可用于url_for()函数的参数并返回对应的URL
+
 # 注册flask插件的方式
 mail = Mail(app)
 bootstrap = Bootstrap(app)
