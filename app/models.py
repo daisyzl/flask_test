@@ -10,9 +10,11 @@ import jwt
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 
-from app import db, login, app
+from app import db, login
+
 
 # 除了外键没有其他数据的辅助表
+# 自引用关系的多对多
 followers = db.Table('followers',
     db.Column('follower_id', db.Integer, db.ForeignKey('user.id')),
     db.Column('followed_id', db.Integer, db.ForeignKey('user.id'))
@@ -31,8 +33,11 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), index=True, unique=True)
     email = db.Column(db.String(120), index=True, unique=True)
+    # index=True可以被索引
     password_hash = db.Column(db.String(128))
     posts = db.relationship('Post', backref='author', lazy='dynamic')
+    # 一对多关系，db.relationship字段通常在“一”的这边定义，并用作访问“多”的便捷方式。不是实际的数据库字段
+    # 如果我有一个用户实例u，表达式u.posts将运行一个数据库查询，返回该用户发表过的所有动态
     # backref参数定义了代表“多”的类的实例反向调用“一”的时候的属性名称。这将会为用户动态添加一个属性post.author，
     # 调用它将返回给该用户动态的用户实例。
     about_me = db.Column(db.String(140))
@@ -46,6 +51,13 @@ class User(UserMixin, db.Model):
 
     def __repr__(self):
         return '<User {}>'.format(self.username)
+    # 调试打印用户实例
+    '''
+    >>> from app.models import User
+    >>> u = User(username='susan', email='susan@example.com')
+    >>> u
+    <User susan>
+    '''
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -108,6 +120,7 @@ class Post(db.Model):
     timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     # 自动设置类名为小写来作为对应表的名称
+    # “一个”用户写了“多”条动态
 
     def __repr__(self):
         return '<Post {}>'.format(self.body)
